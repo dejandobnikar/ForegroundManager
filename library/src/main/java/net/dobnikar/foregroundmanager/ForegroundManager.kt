@@ -12,6 +12,7 @@ class ForegroundManager(private val application: Application) {
 
     private val listeners = mutableSetOf<ForegroundListener>()
 
+    @get:JvmName("isInForeground")
     var inForeground = false
         private set
 
