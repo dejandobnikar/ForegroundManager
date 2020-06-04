@@ -11,6 +11,7 @@ import android.content.IntentFilter
 class ForegroundManager(private val application: Application) {
 
     private val listeners = mutableSetOf<ForegroundListener>()
+    private val lambdaListeners = mutableSetOf<(Boolean) -> Unit>()
 
     @get:JvmName("isInForeground")
     var inForeground = false
@@ -46,6 +47,13 @@ class ForegroundManager(private val application: Application) {
         application.unregisterComponentCallbacks(memoryListener)
         application.unregisterActivityLifecycleCallbacks(lifecycleListener)
         application.unregisterReceiver(broadcastReceiver)
+        listeners.clear()
+    }
+
+    fun addListener(listener: (Boolean) -> Unit) {
+        synchronized(this) {
+            lambdaListeners.add(listener)
+        }
     }
 
     fun addListener(listener: ForegroundListener) {
@@ -60,11 +68,18 @@ class ForegroundManager(private val application: Application) {
         }
     }
 
+    fun removeListener(listener: (Boolean) -> Unit) {
+        synchronized(this) {
+            lambdaListeners.remove(listener)
+        }
+    }
+
     private fun setState(foreground: Boolean) {
         synchronized(this) {
             if (inForeground != foreground) {
                 inForeground = foreground
                 listeners.forEach { it.onForegroundStateChanged(inForeground) }
+                lambdaListeners.forEach { it(inForeground) }
             }
         }
     }
